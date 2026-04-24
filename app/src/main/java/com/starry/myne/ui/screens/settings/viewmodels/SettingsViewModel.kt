@@ -1,0 +1,88 @@
+package com.starry.myne.ui.screens.settings.viewmodels
+
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import com.starry.myne.helpers.PreferenceUtil
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+
+enum class ThemeMode {
+    Light, Dark, Auto
+}
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val preferenceUtil: PreferenceUtil
+) : ViewModel() {
+
+    private val _theme = MutableLiveData(ThemeMode.Auto)
+    private val _amoledTheme = MutableLiveData(false)
+    private val _materialYou = MutableLiveData(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+
+    val theme: LiveData<ThemeMode> = _theme
+    val amoledTheme: LiveData<Boolean> = _amoledTheme
+    val materialYou: LiveData<Boolean> = _materialYou
+
+    init {
+        _theme.value = ThemeMode.entries.toTypedArray()[getThemeValue()]
+        _amoledTheme.value = getAmoledThemeValue()
+        _materialYou.value = getMaterialYouValue()
+    }
+
+    // Getters ================================================================================
+    fun setTheme(newTheme: ThemeMode) {
+        _theme.postValue(newTheme)
+        preferenceUtil.putInt(PreferenceUtil.APP_THEME_INT, newTheme.ordinal)
+    }
+
+    fun setAmoledTheme(newValue: Boolean) {
+        _amoledTheme.postValue(newValue)
+        preferenceUtil.putBoolean(PreferenceUtil.AMOLED_THEME_BOOL, newValue)
+    }
+
+    fun setMaterialYou(newValue: Boolean) {
+        _materialYou.postValue(newValue)
+        preferenceUtil.putBoolean(PreferenceUtil.MATERIAL_YOU_BOOL, newValue)
+    }
+
+    fun setInternalReaderValue(newValue: Boolean) {
+        preferenceUtil.putBoolean(PreferenceUtil.INTERNAL_READER_BOOL, newValue)
+    }
+
+    fun setUseGoogleApiValue(newValue: Boolean) {
+        preferenceUtil.putBoolean(PreferenceUtil.USE_GOOGLE_API_BOOL, newValue)
+    }
+
+    // Getters ================================================================================
+
+    fun getThemeValue() = preferenceUtil.getInt(
+        PreferenceUtil.APP_THEME_INT, ThemeMode.Auto.ordinal
+    )
+
+    fun getAmoledThemeValue() = preferenceUtil.getBoolean(
+        PreferenceUtil.AMOLED_THEME_BOOL, false
+    )
+
+    fun getMaterialYouValue() = preferenceUtil.getBoolean(
+        PreferenceUtil.MATERIAL_YOU_BOOL, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    )
+
+    fun getInternalReaderValue() = preferenceUtil.getBoolean(
+        PreferenceUtil.INTERNAL_READER_BOOL, true
+    )
+
+    fun getUseGoogleApiValue() = preferenceUtil.getBoolean(
+        PreferenceUtil.USE_GOOGLE_API_BOOL, true
+    )
+
+    @Composable
+    fun getCurrentTheme(): ThemeMode {
+        return if (theme.value == ThemeMode.Auto) {
+            if (isSystemInDarkTheme()) ThemeMode.Dark else ThemeMode.Light
+        } else theme.value!!
+    }
+}
